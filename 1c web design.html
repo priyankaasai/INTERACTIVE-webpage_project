@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberFlux Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: black; font-family: Arial, sans-serif; color: white; overflow: hidden; }
+
+        /* Logo Styling with Gradient, Shadow and Rotation */
+        .logo {
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(45deg, cyan, magenta);
+            -webkit-background-clip: text;
+            background-clip: text;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            animation: rotateLogo 3s infinite linear;
+        }
+
+        @keyframes rotateLogo {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cursor {
+            position: fixed; width: 6px; height: 6px; border-radius: 50%;
+            background: white; pointer-events: none; box-shadow: 0 0 10px white;
+            transition: transform 0.05s;
+        }
+
+        .form-container {
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            width: 280px; 
+            padding: 1.2rem; 
+            background: rgba(255, 255, 255, 0.1); 
+            border: 2px solid white; 
+            box-shadow: 0 0 20px white; 
+            border-radius: 10px;
+            transition: 0.3s; 
+            text-align: center;
+            z-index: 9999;
+        }
+
+        .hover-effect { border-color: cyan !important; box-shadow: 0 0 30px cyan !important; }
+
+        .form-container input, .form-container select, .clear-btn {
+            width: 100%; padding: 8px; margin: 8px 0; border: 1px solid white;
+            background: transparent; color: white; transition: 0.3s;
+        }
+
+        .form-container input::placeholder { color: lightgray; }
+        .form-container select { cursor: pointer; }
+
+        .clear-btn {
+            background: white; color: black; cursor: pointer;
+            border: none; font-weight: bold;
+        }
+        .clear-btn:hover { background: cyan; color: black; }
+
+        .control-panel {
+            position: fixed; top: 10px; left: 10px;
+            padding: 1rem; background: rgba(255, 255, 255, 0.1);
+            border: 2px solid white; box-shadow: 0 0 15px white;
+            border-radius: 8px;
+        }
+
+        /* Footer Styling */
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: lightgray;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .navigation-link {
+            display: block;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 10px;
+            font-size: 14px;
+            transition: color 0.3s, background-color 0.3s;
+            padding: 5px;
+        }
+
+        .navigation-link:hover {
+            color: cyan;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="cursor"></div>
+
+    <!-- Logo -->
+    <div class="logo">PR</div>
+
+    <div class="control-panel">
+        <label for="color">Brush Color:</label>
+        <input type="color" id="color" name="color">
+        <br>
+        <label for="symmetry">Symmetry:</label>
+        <select id="symmetry">
+            <option value="1">Single Stroke</option>
+            <option value="2">Double Reflection</option>
+            <option value="4">Quad Mirror</option>
+        </select>
+    </div>
+
+    <div class="form-container" id="formBox">
+        <h1>CyberFlux Portal</h1>
+        <form>
+            <input type="text" name="name" placeholder="Username" required>
+            <input type="password" name="secure-code" placeholder="Password" required>
+            <input type="email" name="email" placeholder="Email Address" required>
+
+            <select name="role">
+                <option value="user">User</option>
+                <option value="moderator">Moderator</option>
+                <option value="developer">Developer</option>
+            </select>
+
+            <input type="submit" value="Enter Portal">
+        </form>
+        <!-- Navigation Link -->
+        <a href="about.html" class="navigation-link">Learn More About Us</a>
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 Priyankaa.R</p>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const cursor = document.querySelector('.cursor');
+        const formBox = document.getElementById('formBox');
+        const colorPicker = document.getElementById('color');
+        const symmetrySelect = document.getElementById('symmetry');
+
+        let drawing = false, lastX = 0, lastY = 0;
+        let sides = 1;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        ctx.lineWidth = 3; 
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+
+        function isInsideForm(e) {
+            let rect = formBox.getBoundingClientRect();
+            return e.clientX > rect.left - 20 && e.clientX < rect.right + 20 &&
+                   e.clientY > rect.top - 20 && e.clientY < rect.bottom + 20;
+        }
+
+        function draw(e) {
+            if (!drawing || isInsideForm(e)) return;
+
+            let centerX = canvas.width / 2;
+            let centerY = canvas.height / 2;
+            let angleStep = (Math.PI * 2) / sides;
+            ctx.strokeStyle = colorPicker.value;
+            ctx.shadowColor = colorPicker.value;
+            ctx.shadowBlur = 15;
+
+            for (let i = 0; i < sides; i++) {
+                let angle = angleStep * i;
+                let rotatedX = Math.cos(angle) * (e.clientX - centerX) - Math.sin(angle) * (e.clientY - centerY) + centerX;
+                let rotatedY = Math.sin(angle) * (e.clientX - centerX) + Math.cos(angle) * (e.clientY - centerY) + centerY;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(rotatedX, rotatedY);
+                ctx.stroke();
+            }
+            [lastX, lastY] = [e.clientX, e.clientY];
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = `${e.clientX - 3}px`;
+            cursor.style.top = `${e.clientY - 3}px`;
+            if (drawing) draw(e);
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!isInsideForm(e)) {
+                drawing = true;
+                [lastX, lastY] = [e.clientX, e.clientY];
+                sides = parseInt(symmetrySelect.value, 10);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mouseout', () => drawing = false);
+
+        colorPicker.addEventListener('input', () => {
+            ctx.strokeStyle = colorPicker.value;
+        });
+
+        symmetrySelect.addEventListener('change', () => {
+            sides = parseInt(symmetrySelect.value, 10);
+        });
+    </script>
+</body>
+</html>
