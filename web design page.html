@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Symmetry Drawing</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px white;
+        }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .start-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            color: black;
+            font-size: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 0 10px white;
+        }
+        .hidden { display: none; }
+
+        /* Logo styles */
+        .logo {
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(45deg, cyan, magenta);
+            -webkit-background-clip: text;
+            background-clip: text;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            animation: rotateLogo 3s infinite linear;
+        }
+
+        @keyframes rotateLogo {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="cursor" id="cursor"></div>
+    
+    <div class="controls hidden" id="controls">
+        <input type="color" id="colorPicker" value="#ffcc00">
+        <input type="range" id="brushSize" min="1" max="50" value="5">
+        <select id="symmetry">
+            <option value="1">No Symmetry</option>
+            <option value="2">2-Way</option>
+            <option value="4">4-Way</option>
+            <option value="6">6-Way</option>
+            <option value="8">8-Way</option>
+        </select>
+        <button onclick="clearCanvas()">Clear</button>
+        <button onclick="saveImage()">Save</button>
+    </div>
+    
+    <button class="start-btn" id="startButton">Start Drawing</button>
+
+    <!-- Logo -->
+    <div class="logo">PR</div>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const cursor = document.getElementById("cursor");
+        const controls = document.getElementById("controls");
+        const startButton = document.getElementById("startButton");
+        const colorPicker = document.getElementById("colorPicker");
+        const brushSize = document.getElementById("brushSize");
+        const symmetrySelect = document.getElementById("symmetry");
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        let currentColor = colorPicker.value;
+        let isDrawing = false;
+        let canDraw = false;
+        let lastX = 0, lastY = 0;
+        let symmetry = 1;
+
+        function setColor(color) {
+            currentColor = color;
+        }
+
+        function draw(x, y) {
+            if (!isDrawing || !canDraw) return;
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = brushSize.value;
+            ctx.lineCap = "round";
+            ctx.shadowColor = currentColor;
+            ctx.shadowBlur = 15;
+            drawSymmetricLines(x, y);
+            lastX = x;
+            lastY = y;
+        }
+
+        function drawSymmetricLines(x, y) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const angleStep = (Math.PI * 2) / symmetry;
+            
+            for (let i = 0; i < symmetry; i++) {
+                const angle = angleStep * i;
+                let newX = centerX + (x - centerX) * Math.cos(angle) - (y - centerY) * Math.sin(angle);
+                let newY = centerY + (x - centerX) * Math.sin(angle) + (y - centerY) * Math.cos(angle);
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(newX, newY);
+                ctx.stroke();
+            }
+            lastX = x;
+            lastY = y;
+        }
+
+        window.addEventListener("mousemove", (event) => {
+            cursor.style.left = `${event.clientX}px`;
+            cursor.style.top = `${event.clientY}px`;
+            if (isDrawing) {
+                draw(event.clientX, event.clientY);
+            }
+        });
+
+        window.addEventListener("mousedown", (event) => {
+            if (!canDraw) return;
+            isDrawing = true;
+            lastX = event.clientX;
+            lastY = event.clientY;
+        });
+
+        window.addEventListener("mouseup", () => {
+            isDrawing = false;
+        });
+
+        window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        colorPicker.addEventListener("input", (event) => {
+            setColor(event.target.value);
+            cursor.style.boxShadow = `0 0 10px ${event.target.value}`;
+        });
+
+        symmetrySelect.addEventListener("change", (event) => {
+            symmetry = parseInt(event.target.value);
+        });
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveImage() {
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = "drawing.png";
+            link.click();
+        }
+
+        startButton.addEventListener("click", () => {
+            canDraw = true;
+            startButton.classList.add("hidden");
+            controls.classList.remove("hidden");
+        });
+
+        // Touch support
+        canvas.addEventListener("touchstart", (event) => {
+            event.preventDefault();
+            if (!canDraw) return;
+            isDrawing = true;
+            lastX = event.touches[0].clientX;
+            lastY = event.touches[0].clientY;
+        });
+
+        canvas.addEventListener("touchmove", (event) => {
+            event.preventDefault();
+            if (isDrawing) {
+                draw(event.touches[0].clientX, event.touches[0].clientY);
+            }
+        });
+
+        canvas.addEventListener("touchend", () => {
+            isDrawing = false;
+        });
+    </script>
+</body>
+</html>
